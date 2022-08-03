@@ -29,7 +29,7 @@ impl FromStr for Coins {
         let map = s
             .split(",")
             .into_iter()
-            .map(|split| helpers::parse_coin(split))
+            .map(|split| helpers::parse_coin_str(split))
             .collect::<StdResult<_>>()?;
         Ok(Self(map))
     }
@@ -39,8 +39,8 @@ impl fmt::Display for Coins {
     // TODO: For empty coins, this stringifies to am empty string, which may cause confusions.
     // Should it stringify to a more informative string, such as `[]`?
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // NOTE: The `iter` method for BTreeMap returns an Iterator where entries are already sorted by key,
-        // so we don't need sort the coins manually
+        // NOTE: The `iter` method for BTreeMap returns an Iterator where entries are already sorted
+        // by key, so we don't need sort the coins manually
         let s = self
             .0
             .iter()
@@ -99,12 +99,12 @@ pub mod helpers {
     /// If the binary size is not a concern, here's an example:
     /// https://github.com/PFC-Validator/terra-rust/blob/v1.1.8/terra-rust-api/src/client/core_types.rs#L34-L55
     ///
-    /// We opt for a dirtier solution. Enumerate characters in the string, and break before the first
-    /// non-number character. Split the string at that index.
+    /// We opt for the following solution: enumerate characters in the string, and break before the
+    /// first non-number character. Split the string at that index.
     ///
     /// This assumes the denom never starts with a number, which is the case:
     /// https://github.com/cosmos/cosmos-sdk/blob/v0.46.0/types/coin.go#L854-L856
-    pub fn parse_coin(s: &str) -> StdResult<(String, Uint128)> {
+    pub fn parse_coin_str(s: &str) -> StdResult<(String, Uint128)> {
         for (i, c) in s.chars().enumerate() {
             if c.is_alphabetic() {
                 let amount = Uint128::from_str(&s[..i])?;

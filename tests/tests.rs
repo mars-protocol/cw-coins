@@ -1,5 +1,5 @@
 use cosmwasm_std::{StdError, Uint128};
-use cw_coins::{helpers::parse_coin, Coins};
+use cw_coins::{helpers::parse_coin_str, Coins};
 use std::str::FromStr;
 
 #[test]
@@ -77,31 +77,27 @@ fn length() {
 
 #[test]
 fn parsing_coin() {
-    let (denom, amount) = parse_coin("12345uatom").unwrap();
+    let (denom, amount) = parse_coin_str("12345uatom").unwrap();
     assert_eq!(denom, "uatom".to_string());
     assert_eq!(amount, Uint128::new(12345));
 
-    let (denom, amount) = parse_coin("69420ibc/1234ABCD").unwrap();
+    let (denom, amount) = parse_coin_str("69420ibc/1234ABCD").unwrap();
     assert_eq!(denom, "ibc/1234ABCD".to_string());
     assert_eq!(amount, Uint128::new(69420));
 
-    let (denom, amount) = parse_coin("88888factory/osmo1234abcd/subdenom").unwrap();
+    let (denom, amount) = parse_coin_str("88888factory/osmo1234abcd/subdenom").unwrap();
     assert_eq!(denom, "factory/osmo1234abcd/subdenom");
     assert_eq!(amount, Uint128::new(88888));
 
-    let err = parse_coin("ngmi").unwrap_err();
+    let err = parse_coin_str("ngmi").unwrap_err();
     assert_eq!(err, StdError::generic_err("Parsing u128: cannot parse integer from empty string"));
 
-    let err = parse_coin("69420").unwrap_err();
+    let err = parse_coin_str("69420").unwrap_err();
     assert_eq!(
         err,
         StdError::parse_err("cosmwasm_std::coins::Coin", "Invalid coin string (69420)")
     );
 }
-
-//--------------------------------------------------------------------------------------------------
-// Test helpers
-//--------------------------------------------------------------------------------------------------
 
 mod helpers {
     use cosmwasm_std::{coin, Coin, Uint128};
