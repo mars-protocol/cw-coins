@@ -65,6 +65,35 @@ fn serde() {
 }
 
 #[test]
+fn handling_duplicates() {
+    // when parsing from JSON string, if there are duplicate keys, only the one that seen the last
+    // will be kept. no error will be thrown in this case. this may not be the desired behavior?
+    // throwing an error should be preferred.
+    let s = r#"{
+        "uatom": "67890",
+        "factory/osmo1234abcd/subdenom": "88888",
+        "uatom": "12345",
+        "ibc/1234ABCD": "69420"
+    }"#;
+
+    let err = serde_json::from_str::<Coins>(s).unwrap_err();
+    assert!(err.to_string().contains("failed to parse into Coins! duplicate denom: uatom"));
+}
+
+#[test]
+fn handling_invalid_amount() {
+    // a JSON string that contains an invalid coin amount
+    let s = r#"{
+        "uatom": "67890",
+        "factory/osmo1234abcd/subdenom": "ngmi",
+        "ibc/1234ABCD": "69420"
+    }"#;
+
+    let err = serde_json::from_str::<Coins>(s).unwrap_err();
+    assert!(err.to_string().contains("failed to parse into Coins! invalid amount: ngmi"));
+}
+
+#[test]
 fn length() {
     let coins = Coins::new();
     assert_eq!(coins.len(), 0);
