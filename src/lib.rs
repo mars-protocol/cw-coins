@@ -130,7 +130,10 @@ impl TryFrom<Vec<Coin>> for Coins {
 
     fn try_from(vec: Vec<Coin>) -> StdResult<Self> {
         let vec_len = vec.len();
-        let map = vec.into_iter().map(|coin| (coin.denom, coin.amount)).collect::<BTreeMap<_, _>>();
+        let map = vec
+            .into_iter()
+            .map(|coin| (coin.denom, coin.amount))
+            .collect::<BTreeMap<_, _>>();
 
         // the map having a different length from the vec means the vec must contain at least one
         // duplicate denom
@@ -167,21 +170,26 @@ impl FromStr for Coins {
         //
         // This assumes the denom never starts with a number, which is the case:
         // https://github.com/cosmos/cosmos-sdk/blob/v0.46.0/types/coin.go#L854-L856
-        let parse_coin_str = |s: &str| -> StdResult<(String, Uint128)> {
+        let parse_coin_str = |s: &str| -> StdResult<Coin> {
             for (i, c) in s.chars().enumerate() {
                 if c.is_alphabetic() {
                     let amount = Uint128::from_str(&s[..i])?;
                     let denom = String::from(&s[i..]);
-                    return Ok((denom, amount));
+                    return Ok(Coin {
+                        amount,
+                        denom,
+                    });
                 }
             }
 
             Err(StdError::parse_err(type_name::<Coin>(), format!("invalid coin string ({})", s)))
         };
 
-        let map = s.split(',').into_iter().map(parse_coin_str).collect::<StdResult<_>>()?;
-
-        Ok(Self(map))
+        s.split(',')
+            .into_iter()
+            .map(parse_coin_str)
+            .collect::<StdResult<Vec<_>>>()?
+            .try_into()
     }
 }
 

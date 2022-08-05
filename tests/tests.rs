@@ -77,6 +77,12 @@ fn handling_duplicates() {
     let err = serde_json::from_str::<Coins>(s).unwrap_err();
     assert!(err.to_string().contains("failed to parse into Coins! duplicate denom: uatom"));
 
+    // same with plain strings
+    let s = "12345uatom,88888factory/osmo1234abcd/subdenom,67890uatom,69420ibc/1234ABCD";
+
+    let err = Coins::from_str(s).unwrap_err();
+    assert_eq!(err.to_string(), "Error parsing into type cw_coins::Coins: duplicate denoms");
+
     // same with Vec<Coin>
     let mut vec = helpers::mock_vec();
     vec.push(coin(67890, "uatom"));
