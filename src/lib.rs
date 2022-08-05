@@ -7,6 +7,54 @@ use cosmwasm_std::{Coin, StdError, StdResult, Uint128};
 use schemars::JsonSchema;
 use serde::{de, Serialize};
 
+/// A collection of coins, similar to Cosmos SDK's `sdk.Coins` struct.
+///
+/// Differently from `sdk.Coins`, which is a vector of `sdk.Coin`, here we implement Coins as a BTreeMap
+/// that maps from coin denoms to amounts. This has a number of advantages:
+///
+/// * coins are naturally sorted alphabetically by denom
+/// * duplicate denoms are automatically removed
+/// * cheaper for searching/inserting/deleting: O(log(n)) compared to O(n)
+/// * compared to `Vec<Coin>`, the map data structure stringifies to a compact JSON representation,
+///   therefore is cheaper when writing to contract storage
+///
+/// ## On the string representation of coins
+///
+/// Two approaches are implemented for stringifing Coins: the JSON representation, and the plain text
+/// representation.
+///
+/// **The JSON representation** comes in the format below. This is used for contract storage or message
+/// passing between contracts:
+///
+/// ```json
+/// {"uatom":"12345","umars":"42069","uosmo":"88888"}
+/// ```
+///
+/// Use the `serde_json` library to convert Coins to/from JSON strings:
+///
+/// ```rust
+/// use cw_coins::Coins;
+///
+/// let coins: Coins = serde_json::from_str(r#"{"uatom":"12345","uosmo":"42069"}"#).unwrap();
+/// let json = serde_json::to_string(&coins).unwrap();
+/// ```
+///
+/// The plain text representation is the same format as the `sdk.Coins.String` method uses. It is used
+/// in event logging:
+///
+/// ```plain
+/// 12345uatom,42069umars,88888uosmo
+/// ```
+///
+/// Use `{from,to}_string` methods to convert Coin to/from plain strings:
+///
+/// ```rust
+/// use std::str::FromStr;
+/// use cw_coins::Coins;
+///
+/// let coins = Coins::from_str("12345uatom,42069umars,88888uosmo").unwrap();
+/// let plain = coins.to_string();
+/// ```
 #[derive(Serialize, Clone, Default, Debug, PartialEq, JsonSchema)]
 pub struct Coins(pub BTreeMap<String, Uint128>);
 
@@ -106,11 +154,8 @@ impl FromStr for Coins {
     type Err = StdError;
 
     fn from_str(s: &str) -> StdResult<Self> {
-        let map = s
-            .split(',')
-            .into_iter()
-            .map(helpers::parse_coin_str)
-            .collect::<StdResult<_>>()?;
+        let map =
+            s.split(',').into_iter().map(helpers::parse_coin_str).collect::<StdResult<_>>()?;
         Ok(Self(map))
     }
 }
