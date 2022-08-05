@@ -66,9 +66,7 @@ fn serde() {
 
 #[test]
 fn handling_duplicates() {
-    // when parsing from JSON string, if there are duplicate keys, only the one that seen the last
-    // will be kept. no error will be thrown in this case. this may not be the desired behavior?
-    // throwing an error should be preferred.
+    // a JSON string that contains a duplicate coin denom; should fail
     let s = r#"{
         "uatom": "67890",
         "factory/osmo1234abcd/subdenom": "88888",
@@ -79,7 +77,7 @@ fn handling_duplicates() {
     let err = serde_json::from_str::<Coins>(s).unwrap_err();
     assert!(err.to_string().contains("failed to parse into Coins! duplicate denom: uatom"));
 
-    // same when parsing from a Vec
+    // same with Vec<Coin>
     let mut vec = helpers::mock_vec();
     vec.push(coin(67890, "uatom"));
 
@@ -89,7 +87,7 @@ fn handling_duplicates() {
 
 #[test]
 fn handling_invalid_amount() {
-    // a JSON string that contains an invalid coin amount
+    // a JSON string that contains an invalid coin amount; should fail
     let s = r#"{
         "uatom": "67890",
         "factory/osmo1234abcd/subdenom": "ngmi",
