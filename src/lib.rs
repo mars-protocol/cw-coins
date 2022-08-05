@@ -1,3 +1,4 @@
+use std::any::type_name;
 use std::collections::{BTreeMap, HashSet};
 use std::fmt;
 use std::str::FromStr;
@@ -76,16 +77,28 @@ impl<'de> de::Deserialize<'de> for Coins {
     }
 }
 
-impl From<Vec<Coin>> for Coins {
-    fn from(coins: Vec<Coin>) -> Self {
-        let map = coins.into_iter().map(|coin| (coin.denom, coin.amount)).collect();
-        Self(map)
+impl TryFrom<Vec<Coin>> for Coins {
+    type Error = StdError;
+
+    fn try_from(vec: Vec<Coin>) -> StdResult<Self> {
+        let vec_len = vec.len();
+        let map = vec.into_iter().map(|coin| (coin.denom, coin.amount)).collect::<BTreeMap<_, _>>();
+
+        // the map having a different length from the vec means the vec must contain at least one
+        // duplicate denom
+        if map.len() != vec_len {
+            return Err(StdError::parse_err(type_name::<Self>(), "duplicate denoms"));
+        }
+
+        Ok(Self(map))
     }
 }
 
-impl From<&[Coin]> for Coins {
-    fn from(coins: &[Coin]) -> Self {
-        coins.to_vec().into()
+impl TryFrom<&[Coin]> for Coins {
+    type Error = StdError;
+
+    fn try_from(slice: &[Coin]) -> StdResult<Self> {
+        slice.to_vec().try_into()
     }
 }
 

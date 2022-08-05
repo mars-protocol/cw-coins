@@ -1,4 +1,4 @@
-use cosmwasm_std::{StdError, Uint128};
+use cosmwasm_std::{StdError, Uint128, coin};
 use cw_coins::{helpers::parse_coin_str, Coins};
 use std::str::FromStr;
 
@@ -8,9 +8,9 @@ fn casting_vec() {
     let coins = helpers::mock_coins();
 
     // &[Coin] --> Coins
-    assert_eq!(Coins::from(vec.as_slice()), coins);
+    assert_eq!(Coins::try_from(vec.as_slice()).unwrap(), coins);
     // Vec<Coin> --> Coins
-    assert_eq!(Coins::from(vec.clone()), coins);
+    assert_eq!(Coins::try_from(vec.clone()).unwrap(), coins);
 
     helpers::sort_by_denom(&mut vec);
 
@@ -78,6 +78,13 @@ fn handling_duplicates() {
 
     let err = serde_json::from_str::<Coins>(s).unwrap_err();
     assert!(err.to_string().contains("failed to parse into Coins! duplicate denom: uatom"));
+
+    // same when parsing from a Vec
+    let mut vec = helpers::mock_vec();
+    vec.push(coin(67890, "uatom"));
+
+    let err = Coins::try_from(vec).unwrap_err();
+    assert_eq!(err.to_string(), "Error parsing into type cw_coins::Coins: duplicate denoms");
 }
 
 #[test]
