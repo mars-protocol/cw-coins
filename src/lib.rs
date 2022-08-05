@@ -13,8 +13,8 @@ pub struct Coins(pub BTreeMap<String, Uint128>);
 // We implement a custom serde::de::Deserialize trait to handle the case where the JSON string contains
 // duplicate keys, i.e. duplicate coin denoms.
 //
-// If we derive the trait, by default, it will not throw an error in such as case. Instead, it takes
-// the amount that is seen the latest. E.g. the following JSON string
+// If we derive the trait, by default, it will not throw an error in such a case. Instead, it takes
+// the amount that is seen the last. E.g. the following JSON string
 //
 // ```json
 // {
@@ -25,7 +25,7 @@ pub struct Coins(pub BTreeMap<String, Uint128>);
 // ```
 //
 // will be deserialized into a Coins object with only one element, with denom `uatom` and amount 67890.
-// The amount 67890 is seen the latest and overwrites the two amounts seen earlier.
+// The amount 67890 is seen the last and overwrites the two amounts seen earlier.
 //
 // This is NOT a desirable property. We want an error to be thown if the JSON string contain dups.
 impl<'de> de::Deserialize<'de> for Coins {
