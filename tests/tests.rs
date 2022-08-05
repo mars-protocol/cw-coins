@@ -75,20 +75,20 @@ fn handling_duplicates() {
     }"#;
 
     let err = serde_json::from_str::<Coins>(s).unwrap_err();
-    assert!(err.to_string().contains("failed to parse into Coins! duplicate denom: uatom"));
+    assert!(err.to_string().contains("duplicate denom: uatom"));
 
     // same with plain strings
     let s = "12345uatom,88888factory/osmo1234abcd/subdenom,67890uatom,69420ibc/1234ABCD";
 
     let err = Coins::from_str(s).unwrap_err();
-    assert_eq!(err.to_string(), "Error parsing into type cw_coins::Coins: duplicate denoms");
+    assert!(err.to_string().contains("duplicate denoms"));
 
     // same with Vec<Coin>
     let mut vec = helpers::mock_vec();
     vec.push(coin(67890, "uatom"));
 
     let err = Coins::try_from(vec).unwrap_err();
-    assert_eq!(err.to_string(), "Error parsing into type cw_coins::Coins: duplicate denoms");
+    assert!(err.to_string().contains("duplicate denoms"));
 }
 
 #[test]
@@ -101,7 +101,7 @@ fn handling_invalid_amount() {
     }"#;
 
     let err = serde_json::from_str::<Coins>(s).unwrap_err();
-    assert!(err.to_string().contains("failed to parse into Coins! invalid amount: ngmi"));
+    assert!(err.to_string().contains("invalid amount: ngmi"));
 }
 
 #[test]
