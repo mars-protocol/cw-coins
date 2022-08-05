@@ -154,8 +154,33 @@ impl FromStr for Coins {
     type Err = StdError;
 
     fn from_str(s: &str) -> StdResult<Self> {
-        let map =
-            s.split(',').into_iter().map(helpers::parse_coin_str).collect::<StdResult<_>>()?;
+        // `cosmwasm_std::Coin` does not implement `FromStr`, so we have do it ourselves
+        //
+        // Parsing the string with regex doesn't work, because the resulting wasm binary would be
+        // too big from including the `regex` library.
+        //
+        // If the binary size is not a concern, here's an example:
+        // https://github.com/PFC-Validator/terra-rust/blob/v1.1.8/terra-rust-api/src/client/core_types.rs#L34-L55
+        //
+        // We opt for the following solution: enumerate characters in the string, and break before
+        // the first non-number character. Split the string at that index.
+        //
+        // This assumes the denom never starts with a number, which is the case:
+        // https://github.com/cosmos/cosmos-sdk/blob/v0.46.0/types/coin.go#L854-L856
+        let parse_coin_str = |s: &str| -> StdResult<(String, Uint128)> {
+            for (i, c) in s.chars().enumerate() {
+                if c.is_alphabetic() {
+                    let amount = Uint128::from_str(&s[..i])?;
+                    let denom = String::from(&s[i..]);
+                    return Ok((denom, amount));
+                }
+            }
+
+            Err(StdError::parse_err(type_name::<Coin>(), format!("invalid coin string ({})", s)))
+        };
+
+        let map = s.split(',').into_iter().map(parse_coin_str).collect::<StdResult<_>>()?;
+
         Ok(Self(map))
     }
 }
@@ -201,37 +226,5 @@ impl Coins {
 
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
-    }
-}
-
-pub mod helpers {
-    use std::any::type_name;
-    use std::str::FromStr;
-
-    use cosmwasm_std::{Coin, StdError, StdResult, Uint128};
-
-    /// `cosmwasm_std::Coin` does not implement `FromStr`, so we have do it ourselves
-    ///
-    /// Parsing the string with regex doesn't work, because the resulting wasm binary would be too big
-    /// from including the `regex` library.
-    ///
-    /// If the binary size is not a concern, here's an example:
-    /// https://github.com/PFC-Validator/terra-rust/blob/v1.1.8/terra-rust-api/src/client/core_types.rs#L34-L55
-    ///
-    /// We opt for the following solution: enumerate characters in the string, and break before the
-    /// first non-number character. Split the string at that index.
-    ///
-    /// This assumes the denom never starts with a number, which is the case:
-    /// https://github.com/cosmos/cosmos-sdk/blob/v0.46.0/types/coin.go#L854-L856
-    pub fn parse_coin_str(s: &str) -> StdResult<(String, Uint128)> {
-        for (i, c) in s.chars().enumerate() {
-            if c.is_alphabetic() {
-                let amount = Uint128::from_str(&s[..i])?;
-                let denom = String::from(&s[i..]);
-                return Ok((denom, amount));
-            }
-        }
-
-        Err(StdError::parse_err(type_name::<Coin>(), format!("Invalid coin string ({})", s)))
     }
 }
