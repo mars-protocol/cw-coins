@@ -100,7 +100,7 @@ fn handling_invalid_amount() {
 
 #[test]
 fn length() {
-    let coins = Coins::new();
+    let coins = Coins::default();
     assert_eq!(coins.len(), 0);
     assert_eq!(coins.is_empty(), true);
 

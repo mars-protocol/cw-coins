@@ -7,7 +7,7 @@ use cosmwasm_std::{Coin, StdError, StdResult, Uint128};
 use schemars::JsonSchema;
 use serde::{de, Serialize};
 
-#[derive(Serialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Clone, Default, Debug, PartialEq, JsonSchema)]
 pub struct Coins(pub BTreeMap<String, Uint128>);
 
 // We implement a custom serde::de::Deserialize trait to handle the case where the JSON string contains
@@ -107,9 +107,9 @@ impl FromStr for Coins {
 
     fn from_str(s: &str) -> StdResult<Self> {
         let map = s
-            .split(",")
+            .split(',')
             .into_iter()
-            .map(|split| helpers::parse_coin_str(split))
+            .map(helpers::parse_coin_str)
             .collect::<StdResult<_>>()?;
         Ok(Self(map))
     }
@@ -130,10 +130,6 @@ impl fmt::Display for Coins {
 }
 
 impl Coins {
-    pub fn new() -> Self {
-        Self(BTreeMap::new())
-    }
-
     pub fn to_vec(&self) -> Vec<Coin> {
         self.0
             .iter()
